@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Arcade Game - P1 </title>
+    	<style type="text/css">
+      		canvas { border: 3px solid black; }
+    		body { background-color: #FFF; }
+            //#canvas {background-color: #ccc;}
+    	</style>
+	<script type="text/javascript">
+
+var canvas;
+var context;
+        
+var background = new Image();
+    background.src = "roadway.png";
+var car = new Image();
+    car.src = "car.png";
+var treeRight = new Image();
+    treeRight.src= "tree_right.png";
+var treeLeft = new Image();
+    treeLeft.src ="tree_left.png";
+var roadSign = new Image();
+    roadSign.src= "road_sign.png";
+var crate = new Image();
+    crate.src = "crate.png";
+var startScreen = new Image();
+    startScreen.src = "start_screen.png";
+var endScreen = new Image();
+    endScreen.src = "end_screen.png";
+        
+window.addEventListener("keydown", accelerate);
+window.addEventListener("keyup", decelerate);
+ 
+// ball color
+var color = "#FFFFFF";
+
+// physical variables
+var g = 2; 			// gravity - (acceleration affecting Y only)
+var fac = 0.8; 		// velocity reduction factor per bounce
+var radius = 20; 	// ball radius
+
+           var map = [];
+var objects = [];
+var objectNum = 0;
+var trees = [];
+var treeNum = 0;
+// initialize position and velocity of ball
+var x = 50; 
+var y = 50;
+var xB = 50;
+var yB = 50;
+var vx = 2; 
+var vy = 0;
+var score = 0;
+
+        
+var curSpeed = 0;
+var ACCEL_SPEED = .1;
+var TOP_SPEED = 5;
+var CAR_TOP_SPEED = 45;
+var DECEL_SPEED = .05;
+var decelerating = false;
+var accelerate = false;
+var left = false;
+var right = false;
+var stopping = false;
+        
+var startScreenActive = true;
+var isFailure = false;
+var first = true;
+        
+        
+
+// ensures that code does not run before page has loaded
+window.onload = init; 
+
+	function init()
+	{
+map = [];     
+objects = [];
+objectNum = 0;
+trees = [];
+ treeNum = 0;        
+        x = 50; 
+ y = 50;
+xB = 50;
+yB = 50;
+vx = 2; 
+vy = 0;
+score = 0;
+
+        
+curSpeed = 0;
+ACCEL_SPEED = .1;
+TOP_SPEED = 12;
+CAR_TOP_SPEED = 45;
+DECEL_SPEED = .05;
+decelerating = false;
+accelerate = false;
+left = false;
+right = false;
+stopping = false;   
+        
+        
+startScreenActive = true;
+isFailure = false;
+	canvas = document.getElementById('canvas');
+	context = canvas.getContext('2d');
+    context.drawImage(background,0,0);
+    y = canvas.height - radius - 70;
+    x = (canvas.width - radius)/2 + 50;
+    drawBall();
+	//return setInterval( update, 1000/60 ); // 60 frames per second
+    if (first){
+        first = false;
+        update();
+    }
+	}
+
+   	function update(){
+        requestAnimationFrame(update); 
+        generateObject();
+        generateTree();
+        if (accelerate){
+            if (TOP_SPEED >= curSpeed){
+                //alert("TOP SPEED" + TOP_SPEED + " > " + "curSpeed" + curSpeed);
+                curSpeed += ACCEL_SPEED;
+                yB += curSpeed;
+                y -= 2;
+            }
+            else{
+                if (y > 0 + radius){
+                    //curSpeed +=ACCEL_SPEED;
+                    y -= 2;
+                }
+                yB += TOP_SPEED;
+            }
+        }
+        else if (decelerating){
+                //alert(curSpeed);
+                //curSpeed += 1;
+                
+                if (y < canvas.height - radius - 70){
+                        y += .5;
+                }
+                else if(curSpeed > 0){
+                    curSpeed -= DECEL_SPEED;
+                }
+                else {
+                    curSpeed = 0;
+                }
+            yB += curSpeed; 
+            if (curSpeed <= 0){
+                decelerating = false;
+            }
+        }
+        if (left && x > 5){
+            x -= 5;
+        }
+        if (right && x < canvas.width - 42){
+            x+= 5;
+        }
+        if (stopping){
+            if (y < canvas.height - radius - 70){
+                        y += 2;
+            }
+            else if (curSpeed > 0) {
+                curSpeed -= DECEL_SPEED*4; 
+            }
+            else {
+                curspeed = 0;
+                stopping = false; 
+            }
+        
+        }
+        
+        // Prevent background from disappearing.
+        if (yB > 600 || yB < -600){
+            //alert("It's greater than!!!");
+                yB = 0;
+        }
+		drawBall();
+	}
+        
+
+    function accelerate(e){
+        startScreenActive = false;
+        if (isFailure){
+            init();
+        }
+        else{
+        e = e || window.event;
+        map[e.keyCode] = e.type = 'keydown';
+        //alert(map[38] + " " + map[37]);
+        if (map[38]){
+            accelerate = true;
+            decelerating = false;
+            //while (map[38]){
+                //yB += TOP_SPEED;
+                //alert("HI");
+            //}
+        //alert(yB);
+        
+        } 
+        if (map[37] && curSpeed > 0){
+            left = true;
+            //x -= 5;
+            
+        }
+        if (map[39] && curSpeed > 0){
+            right = true;
+            //x += 5;
+            
+        }
+        if (map[40] && curSpeed > 0){
+            stopping = true;
+        }
+        }
+       // xB = 0;
+    }
+    
+        
+    function decelerate(e){
+        e = e || window.event;
+        if (e.keyCode == '38'){
+            decelerating = true;
+            map[38] = null;
+            accelerate = false;
+        }
+        if (e.keyCode == '37'){
+            map[37] = null;
+            left = false;
+        }
+        if (e.keyCode == '39'){
+            map[39] = null;
+            right = false;
+        }
+        if (e.keyCode == '40'){
+            map[40] = null;
+            stopping = false;
+        }
+    }
+    
+    function generateObject(){
+        if (curSpeed > 0 && (Math.random()*100000 + 1) > 99000){
+            // new [x,y, imageName];\
+            //alert("WE HERE NAH");
+            objects[objectNum] = new Array(3);
+            objects[objectNum][0] = 65+Math.random()*470;
+            objects[objectNum][1] = -20;
+            objects[objectNum][2] = crate;
+            objects[objectNum][3] = TOP_SPEED/(2+Math.random()*3);
+            objectNum ++;
+            //drawObject = true;
+        }
+    }
+        
+   function generateTree(){
+        if (curSpeed > 0 && (Math.random()*100000 + 1) > 95000){
+            // new [x,y, imageName];\
+            //alert("WE HERE NAH");
+            if (Math.random() > .01){
+                if(Math.random() >.5){
+                    trees[treeNum] = new Array(3);
+                    trees[treeNum][0] = canvas.width - 51;
+                    trees[treeNum][1] = -137;
+                    trees[treeNum][2] = treeRight;
+                    trees[treeNum][3] = curSpeed;
+                    treeNum ++;
+                }
+                else{
+                    trees[treeNum] = new Array(3);
+                    trees[treeNum][0] =  0;
+                    trees[treeNum][1] = -137;
+                    trees[treeNum][2] = treeLeft;
+                    trees[treeNum][3] = curSpeed;
+                    treeNum ++;
+                }
+            }
+            else{
+                    trees[treeNum] = new Array(3);
+                    trees[treeNum][0] =  canvas.width - 60;
+                    trees[treeNum][1] = -107;
+                    trees[treeNum][2] = roadSign;
+                    trees[treeNum][3] = curSpeed;
+                    treeNum ++;
+            }
+            
+            //drawObject = true;
+        }
+    }
+        
+    function failure(){
+        decelerating = true;
+        accelerate = false;
+        left = false;
+        right = false;
+        stopping = true;
+        
+        isFailure = true;
+    }
+
+	function drawBall() 
+	{
+		with(context)
+		{
+        	clearRect(0, 0, canvas.width, canvas.height); 
+			fillStyle = color;
+            drawImage(background,0,yB-600);
+            drawImage(background,0,yB);
+            drawImage(background,0,yB+600);
+        	beginPath();
+                for (var i = 0; i < objectNum; i++){
+                    //alert(objects[i][0]);
+                    if (curSpeed > 0){
+                    objects[i][1] += curSpeed;
+                    }
+                    //alert("WE HERE BOY");
+                    if (objects[i][0] >= x && objects[i][0] <= x+37 && objects[i][1] >= y && objects[i][1] <= y + 82){
+                        failure();
+                    }
+                    {
+                    drawImage(objects[i][2], objects[i][0],objects[i][1]);
+                    /*if (objects[i][1] > canvas.height){
+                        objects[i] = null;
+                        objectNum --;
+                    }*/
+                    }
+                        
+                }
+        		//arc(x, y, radius, 0, 2*Math.PI, true);
+                 for (var i = treeNum -1; i >= 0; i--){
+                    //alert(objects[i][0]);
+                    if (curSpeed > 0){
+                    trees[i][1] += curSpeed;
+                    }
+                    if ((trees[i][0] >= x && trees[i][0] <= x+37) && (trees[i][1] >= y && trees[i][1] <= y + 82)){
+                        failure();
+                    }
+                     {
+                    drawImage(trees[i][2], trees[i][0],trees[i][1]);
+                     }
+                }
+                //drawImage (treeRight, x,y);
+                drawImage(car, x, y, 37, 82);
+                context.font = "20px Georgia";
+                context.fillText("Score: " + objectNum*200, 0, 20);
+                if (startScreenActive){
+                    drawImage(startScreen, 0,-50);
+                }
+                if (isFailure){
+                   drawImage(endScreen, 0, -200);
+                    context.font = "28px Georgia";
+                     context.fillText("Score: " + objectNum*200, canvas.width/2- 50, canvas.height/2 -50);
+                }
+        	closePath();
+        	fill();
+		}
+	};
+</script>
+</head>
+
+<body onload="init()">
+<canvas id="canvas" width="600" height="600">
+    <img src="roadway.png" alt="Roadway" height = 600 width = 600>
+Your browser does not support the canvas element.
+</canvas>
+</body>
+</html>
